@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f5ef">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="日课">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <title>日课 · 每日打卡</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f4f5ef;
+      --surface: #fffefa;
+      --ink: #222923;
+      --muted: #778078;
+      --line: #e5e8df;
+      --green: #31765b;
+      --green-soft: #e5f1e9;
+      --coral: #d66e55;
+      --blue: #507b9b;
+      --yellow: #d2a849;
+      --shadow: 0 14px 40px rgba(35, 48, 39, .055);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .shell { width: min(100% - 48px, 920px); margin: 0 auto; padding: 30px 0 52px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 700; font-size: 17px; }
+    .brand-mark {
+      display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px;
+      background: var(--green); color: white; font-size: 17px; font-weight: 650;
+    }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .today-button, .add-button, .icon-button, .filter-button, .week-day, .text-button {
+      border: 0; cursor: pointer;
+    }
+    .today-button { background: transparent; color: var(--muted); padding: 8px 4px; font-size: 13px; }
+    .today-button:hover, .text-button:hover { color: var(--green); }
+    .add-button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 40px; padding: 0 15px; border-radius: 7px; background: var(--green); color: white;
+      font-size: 13px; font-weight: 600; transition: background .16s, transform .16s;
+    }
+    .add-button:hover { background: #27644b; transform: translateY(-1px); }
+    .add-button .plus { font-size: 19px; line-height: 12px; font-weight: 400; }
+    .intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 49px 0 30px; }
+    .eyebrow { color: var(--coral); font-weight: 700; font-size: 11px; letter-spacing: 1.3px; text-transform: uppercase; }
+    h1 { margin: 9px 0 8px; font-size: 29px; line-height: 1.28; letter-spacing: 0; font-weight: 650; }
+    .date-line { color: var(--muted); font-size: 14px; }
+    .progress-block { width: 245px; padding-bottom: 3px; }
+    .progress-label { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+    .progress-label strong { color: var(--ink); font-size: 14px; font-weight: 650; }
+    .progress-track { height: 7px; overflow: hidden; border-radius: 10px; background: #e3e8df; }
+    .progress-fill { height: 100%; width: 0; border-radius: inherit; background: var(--green); transition: width .3s ease; }
+    .week-section { padding: 20px 0 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .week-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+    .week-head h2 { margin: 0; font-size: 13px; font-weight: 650; }
+    .week-controls { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+    .icon-button { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; background: transparent; color: var(--muted); font-size: 18px; }
+    .icon-button:hover { background: #e9ece5; color: var(--ink); }
+    .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 9px; }
+    .week-day {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+      min-width: 0; height: 71px; border: 1px solid transparent; border-radius: 7px; background: transparent;
+      color: var(--muted); transition: background .16s, border-color .16s;
+    }
+    .week-day:hover { background: rgba(255,255,255,.65); }
+    .week-day.selected { border-color: #b8d2c1; background: var(--surface); color: var(--ink); box-shadow: 0 2px 8px rgba(38, 67, 48, .04); }
+    .week-day.today .day-number { color: var(--green); font-weight: 700; }
+    .week-day .weekday { font-size: 11px; }
+    .week-day .day-number { font-size: 14px; font-weight: 550; }
+    .week-day .day-dot { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
+    .week-day.partial .day-dot { background: var(--yellow); }
+    .week-day.finished .day-dot { background: var(--green); }
+    .list-section { padding-top: 27px; }
+    .list-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+    .list-title { display: flex; align-items: baseline; gap: 9px; }
+    .list-title h2 { margin: 0; font-size: 17px; font-weight: 650; }
+    .list-count { color: var(--muted); font-size: 12px; }
+    .filters { display: flex; align-items: center; gap: 3px; padding: 3px; border-radius: 7px; background: #e9ece5; }
+    .filter-button { padding: 6px 10px; border-radius: 5px; background: transparent; color: var(--muted); font-size: 12px; }
+    .filter-button.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(25, 40, 29, .08); }
+    .task-list { border-top: 1px solid var(--line); }
+    .task-row {
+      display: grid; grid-template-columns: 23px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+      min-height: 62px; border-bottom: 1px solid var(--line); animation: appear .18s ease-out;
+    }
+    @keyframes appear { from { opacity: .3; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+    .task-check {
+      appearance: none; display: grid; place-items: center; width: 21px; height: 21px; margin: 0;
+      border: 1.5px solid #b7c0b8; border-radius: 50%; background: transparent; cursor: pointer; transition: .16s;
+    }
+    .task-check:hover { border-color: var(--green); background: var(--green-soft); }
+    .task-check:checked { border-color: var(--green); background: var(--green); }
+    .task-check:checked::after { content: ""; width: 8px; height: 4px; margin-top: -2px; border-left: 1.5px solid white; border-bottom: 1.5px solid white; transform: rotate(-45deg); }
+    .task-name { min-width: 0; overflow-wrap: anywhere; font-size: 14px; line-height: 1.5; }
+    .task-row.done .task-name { color: #8c958d; text-decoration: line-through; text-decoration-color: #b9c0ba; }
+    .task-actions { display: flex; align-items: center; gap: 11px; opacity: 0; transition: opacity .15s; }
+    .task-row:hover .task-actions, .task-row:focus-within .task-actions { opacity: 1; }
+    .text-button { padding: 6px 0; background: transparent; color: #818a82; font-size: 12px; white-space: nowrap; }
+    .edit-input { width: 100%; max-width: 460px; border: 0; border-bottom: 1px solid #8bb19a; outline: none; padding: 4px 0; background: transparent; color: var(--ink); font-size: 14px; }
+    .empty-state { padding: 38px 14px; color: var(--muted); text-align: center; font-size: 13px; }
+    .empty-state strong { display: block; margin-bottom: 7px; color: var(--ink); font-size: 14px; font-weight: 600; }
+    .add-form { display: flex; gap: 9px; padding: 14px 0 0; }
+    .add-form[hidden] { display: none; }
+    .add-form input { flex: 1; min-width: 0; height: 42px; border: 1px solid #dce2d9; border-radius: 6px; outline: none; padding: 0 12px; background: var(--surface); color: var(--ink); font-size: 13px; }
+    .add-form input:focus { border-color: #85aa92; box-shadow: 0 0 0 3px rgba(49,118,91,.1); }
+    .add-form .save-button { height: 42px; padding: 0 15px; border: 0; border-radius: 6px; background: var(--green); color: white; font-size: 13px; cursor: pointer; }
+    .add-form .cancel-button { height: 42px; padding: 0 10px; border: 0; background: transparent; color: var(--muted); font-size: 13px; cursor: pointer; }
+    .footer-note { display: flex; justify-content: space-between; gap: 16px; padding-top: 26px; color: #8b948c; font-size: 11px; }
+    .toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 12px); padding: 10px 15px; border: 1px solid #d8e4db; border-radius: 7px; background: #fffefa; box-shadow: var(--shadow); color: #355b43; font-size: 13px; opacity: 0; pointer-events: none; transition: .2s; }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+    button:focus-visible, input:focus-visible { outline: 2px solid #4f8b6b; outline-offset: 2px; }
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 32px, 520px); padding-top: 18px; }
+      .intro { align-items: flex-start; flex-direction: column; gap: 23px; padding: 37px 0 23px; }
+      .progress-block { width: 100%; }
+      h1 { font-size: 25px; }
+      .week-grid { gap: 3px; }
+      .week-day { height: 65px; }
+      .week-head { margin-bottom: 10px; }
+      .week-controls { gap: 3px; }
+      .list-section { padding-top: 22px; }
+      .list-head { align-items: flex-start; flex-direction: column; gap: 11px; }
+      .task-row { grid-template-columns: 23px minmax(0, 1fr) auto; gap: 9px; min-height: 59px; }
+      .task-actions { opacity: 1; gap: 8px; }
+      .text-button { font-size: 11px; }
+      .footer-note { padding-top: 22px; }
+    }
+    @media (max-width: 390px) {
+      .brand { font-size: 15px; }
+      .add-button { padding: 0 11px; }
+      .today-button { font-size: 12px; }
+      .week-day .weekday { font-size: 10px; }
+      .week-day .day-number { font-size: 13px; }
+      .task-actions { gap: 6px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">日</span><span>日课</span></div>
+      <div class="top-actions">
+        <button class="today-button" id="back-today" type="button" hidden>回到今天</button>
+        <button class="add-button" id="open-add" type="button"><span class="plus" aria-hidden="true">+</span><span>添加任务</span></button>
+      </div>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <div class="eyebrow">DAILY CHECK-IN</div>
+        <h1 id="page-title">把今天，慢慢完成。</h1>
+        <div class="date-line" id="date-line"></div>
+      </div>
+      <div class="progress-block" aria-live="polite">
+        <div class="progress-label"><span>今日进度</span><strong id="progress-copy">0 / 0 项</strong></div>
+        <div class="progress-track" role="progressbar" aria-label="今日任务完成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+    </section>
+
+    <section class="week-section" aria-labelledby="week-title">
+      <div class="week-head">
+        <h2 id="week-title">本周</h2>
+        <div class="week-controls">
+          <button class="icon-button" id="prev-week" type="button" aria-label="上一周" title="上一周">‹</button>
+          <span id="week-label"></span>
+          <button class="icon-button" id="next-week" type="button" aria-label="下一周" title="下一周">›</button>
+        </div>
+      </div>
+      <div class="week-grid" id="week-grid" role="group" aria-label="选择日期"></div>
+    </section>
+
+    <section class="list-section" aria-labelledby="list-title">
+      <div class="list-head">
+        <div class="list-title"><h2 id="list-title">任务清单</h2><span class="list-count" id="list-count"></span></div>
+        <div class="filters" role="group" aria-label="筛选任务">
+          <button class="filter-button active" data-filter="all" type="button">全部</button>
+          <button class="filter-button" data-filter="todo" type="button">待完成</button>
+          <button class="filter-button" data-filter="done" type="button">已完成</button>
+        </div>
+      </div>
+      <div class="task-list" id="task-list"></div>
+      <form class="add-form" id="add-form" hidden>
+        <input id="task-input" maxlength="80" autocomplete="off" placeholder="加一项今天要完成的事" aria-label="任务名称">
+        <button class="save-button" type="submit">保存</button>
+        <button class="cancel-button" id="cancel-add" type="button">取消</button>
+      </form>
+    </section>
+
+    <footer class="footer-note"><span>每天进步一点点</span><span id="week-summary"></span></footer>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "daymark-checklist-v1";
+      const starterTasks = [
+        { id: "starter-1", title: "整理今天最重要的一件事" },
+        { id: "starter-2", title: "阅读 20 分钟" },
+        { id: "starter-3", title: "拉伸或散步 10 分钟" },
+        { id: "starter-4", title: "睡前整理一下桌面" }
+      ];
+      const today = startOfDay(new Date());
+      let state = loadState();
+      let selectedDate = new Date(today);
+      let weekOffset = 0;
+      let filter = "all";
+      let editingId = null;
+      let toastTimer;
+
+      const $ = (selector) => document.querySelector(selector);
+      const dateKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const sameDay = (a, b) => dateKey(a) === dateKey(b);
+      function startOfDay(date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (saved && Array.isArray(saved.tasks) && saved.completions && typeof saved.completions === "object") return saved;
+        } catch (_) {}
+        return { tasks: starterTasks, completions: {} };
+      }
+      function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function completedIds(date = selectedDate) { return new Set(state.completions[dateKey(date)] || []); }
+      function formatFullDate(date) {
+        return new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "long", day: "numeric", weekday: "long" }).format(date);
+      }
+      function weekStart(date) {
+        const result = startOfDay(date);
+        result.setDate(result.getDate() - ((result.getDay() + 6) % 7));
+        return result;
+      }
+      function escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+      }
+      function tasksForDate(date) {
+        const done = completedIds(date);
+        const tasks = state.tasks.filter((task) => filter === "all" || (filter === "done" ? done.has(task.id) : !done.has(task.id)));
+        return tasks.slice().sort((a, b) => Number(done.has(a.id)) - Number(done.has(b.id)) || state.tasks.indexOf(a) - state.tasks.indexOf(b));
+      }
+      function renderWeek() {
+        const start = weekStart(today);
+        start.setDate(start.getDate() + weekOffset * 7);
+        const end = new Date(start); end.setDate(start.getDate() + 6);
+        const monthFormat = new Intl.DateTimeFormat("zh-CN", { month: "short" });
+        $("#week-label").textContent = start.getMonth() === end.getMonth()
+          ? `${start.getFullYear()}年 ${monthFormat.format(start)}`
+          : `${monthFormat.format(start)} — ${monthFormat.format(end)}`;
+        const weekdays = ["一", "二", "三", "四", "五", "六", "日"];
+        const grid = $("#week-grid");
+        grid.replaceChildren();
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(start); date.setDate(start.getDate() + i);
+          const done = completedIds(date);
+          const total = state.tasks.length;
+          const isFinished = total > 0 && state.tasks.every((task) => done.has(task.id));
+          const isPartial = done.size > 0 && !isFinished;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `week-day${sameDay(date, selectedDate) ? " selected" : ""}${sameDay(date, today) ? " today" : ""}${isFinished ? " finished" : isPartial ? " partial" : ""}`;
+          button.dataset.date = dateKey(date);
+          button.setAttribute("aria-label", `${formatFullDate(date)}，${done.size} 项完成`);
+          if (sameDay(date, selectedDate)) button.setAttribute("aria-pressed", "true");
+          button.innerHTML = `<span class="weekday">周${weekdays[i]}</span><span class="day-number">${date.getDate()}</span><span class="day-dot" aria-hidden="true"></span>`;
+          grid.append(button);
+        }
+        const completeDays = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date(start); date.setDate(start.getDate() + i);
+          const done = completedIds(date);
+          return state.tasks.length > 0 && state.tasks.every((task) => done.has(task.id));
+        }).filter(Boolean).length;
+        $("#week-summary").textContent = state.tasks.length ? `本周完成 ${completeDays} 天` : "";
+      }
+      function renderTasks() {
+        const completed = completedIds();
+        const total = state.tasks.length;
+        const doneCount = state.tasks.filter((task) => completed.has(task.id)).length;
+        const percent = total ? Math.round(doneCount / total * 100) : 0;
+        $("#date-line").textContent = formatFullDate(selectedDate);
+        $("#back-today").hidden = sameDay(selectedDate, today);
+        $("#progress-copy").textContent = `${doneCount} / ${total} 项`;
+        $("#progress-fill").style.width = `${percent}%`;
+        $("#progress-bar").setAttribute("aria-valuenow", String(percent));
+        $("#list-count").textContent = total ? `${doneCount} / ${total} 已完成` : "";
+        document.querySelectorAll(".filter-button").forEach((button) => button.classList.toggle("active", button.dataset.filter === filter));
+
+        const container = $("#task-list");
+        container.replaceChildren();
+        if (!total) {
+          container.innerHTML = '<div class="empty-state"><strong>今天还没有任务</strong>添加一项，开始今天的打卡。</div>';
+          return;
+        }
+        const visibleTasks = tasksForDate(selectedDate);
+        if (!visibleTasks.length) {
+          container.innerHTML = `<div class="empty-state"><strong>${filter === "done" ? "还没有完成的任务" : "所有任务都完成了"}</strong>${filter === "done" ? "完成一项后，它会出现在这里。" : "今天的清单已经清空。"}</div>`;
+          return;
+        }
+        visibleTasks.forEach((task) => {
+          const isDone = completed.has(task.id);
+          const row = document.createElement("div");
+          row.className = `task-row${isDone ? " done" : ""}`;
+          if (editingId === task.id) {
+            row.innerHTML = `<span aria-hidden="true"></span><form class="edit-form" data-id="${escapeHTML(task.id)}" style="display:flex;gap:9px;align-items:center"><input class="edit-input" aria-label="编辑任务名称" maxlength="80" value="${escapeHTML(task.title)}"><button class="text-button" type="submit">保存</button><button class="text-button cancel-edit" type="button">取消</button></form><span></span>`;
+          } else {
+            row.innerHTML = `<input class="task-check" type="checkbox" aria-label="完成：${escapeHTML(task.title)}" data-id="${escapeHTML(task.id)}" ${isDone ? "checked" : ""}><span class="task-name">${escapeHTML(task.title)}</span><div class="task-actions"><button class="text-button edit-task" type="button" data-id="${escapeHTML(task.id)}">编辑</button><button class="text-button delete-task" type="button" data-id="${escapeHTML(task.id)}">删除</button></div>`;
+          }
+          container.append(row);
+        });
+        if (editingId) {
+          const input = container.querySelector(".edit-input");
+          if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+        }
+      }
+      function render() { renderWeek(); renderTasks(); }
+      function showToast(message) {
+        const toast = $("#toast"); toast.textContent = message; toast.classList.add("show");
+        clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove("show"), 1900);
+      }
+      function changeWeek(amount) {
+        weekOffset += amount;
+        const start = weekStart(today); start.setDate(start.getDate() + weekOffset * 7);
+        selectedDate = new Date(start); render();
+      }
+
+      $("#open-add").addEventListener("click", () => {
+        const form = $("#add-form"); form.hidden = false; $("#task-input").focus();
+      });
+      $("#cancel-add").addEventListener("click", () => { $("#add-form").hidden = true; $("#task-input").value = ""; });
+      $("#add-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const input = $("#task-input"); const title = input.value.trim();
+        if (!title) { input.focus(); return; }
+        state.tasks.push({ id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, title });
+        saveState(); filter = "all"; $("#add-form").hidden = true; input.value = ""; render(); showToast("已添加到每日清单");
+      });
+      $("#back-today").addEventListener("click", () => { selectedDate = new Date(today); weekOffset = 0; render(); });
+      $("#prev-week").addEventListener("click", () => changeWeek(-1));
+      $("#next-week").addEventListener("click", () => changeWeek(1));
+      $("#week-grid").addEventListener("click", (event) => {
+        const button = event.target.closest(".week-day"); if (!button) return;
+        const [year, month, day] = button.dataset.date.split("-").map(Number);
+        selectedDate = new Date(year, month - 1, day); render();
+      });
+      document.querySelector(".filters").addEventListener("click", (event) => {
+        const button = event.target.closest(".filter-button"); if (!button) return;
+        filter = button.dataset.filter; renderTasks();
+      });
+      $("#task-list").addEventListener("change", (event) => {
+        const checkbox = event.target.closest(".task-check"); if (!checkbox) return;
+        const key = dateKey(selectedDate); const done = new Set(state.completions[key] || []);
+        if (checkbox.checked) done.add(checkbox.dataset.id); else done.delete(checkbox.dataset.id);
+        state.completions[key] = Array.from(done); saveState(); render();
+        if (checkbox.checked && state.tasks.length && state.tasks.every((task) => done.has(task.id))) showToast("今天的清单全部完成");
+      });
+      $("#task-list").addEventListener("click", (event) => {
+        const edit = event.target.closest(".edit-task");
+        const cancel = event.target.closest(".cancel-edit");
+        const remove = event.target.closest(".delete-task");
+        if (edit) { editingId = edit.dataset.id; renderTasks(); }
+        if (cancel) { editingId = null; renderTasks(); }
+        if (remove) {
+          const id = remove.dataset.id; state.tasks = state.tasks.filter((task) => task.id !== id);
+          Object.keys(state.completions).forEach((key) => { state.completions[key] = state.completions[key].filter((doneId) => doneId !== id); });
+          saveState(); render(); showToast("任务已删除");
+        }
+      });
+      $("#task-list").addEventListener("submit", (event) => {
+        const form = event.target.closest(".edit-form"); if (!form) return;
+        event.preventDefault(); const title = form.querySelector("input").value.trim();
+        if (!title) { form.querySelector("input").focus(); return; }
+        const task = state.tasks.find((item) => item.id === form.dataset.id); if (task) task.title = title;
+        editingId = null; saveState(); render(); showToast("任务已更新");
+      });
+      render();
+    })();
+  </script>
+  <script>
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>
